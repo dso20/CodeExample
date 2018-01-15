@@ -1,0 +1,522 @@
+﻿@using System.Activities.Statements
+@using System.Web.Configuration
+@using Microsoft.Ajax.Utilities
+@using Microsoft.SqlServer.Server
+@using ParaConfs.Models
+@using ParaConfs.ViewModels
+@model ParaConfs.ViewModels.BookingIndexViewModel
+
+
+
+<!--only show below on first login-->
+@*if (Model.User.UniqueId.ToString() == Request.QueryString["uniqueId"])*@
+@if (Request.QueryString["uniqueId"] != null || User.IsInRole("Admin"))
+{
+	<div class="container">
+		<h2>Thank you for booking your skydive! Welcome to your participant page!</h2>
+		<div class="row">
+			@Html.Partial("_ThanksForBooking")
+		</div>
+
+		<div class="row">
+			@Html.Partial("_WelcomeMessage")
+
+			<!--only show below if unique id matches-->
+			@if (Model.User != null || User.IsInRole("Admin"))
+			{
+				if (User.IsInRole("Admin") || Request.QueryString["uniqueId"] == Model.User.UniqueId.ToString())
+				{
+					@Html.Partial("_ChangePassword", Model.ChangePasswordViewModel, new ViewDataDictionary())
+				}
+				else if (Request.QueryString["Message"] == "PasswordUpdated")
+				{
+					<div class="col-lg-4">
+						<div class="alert alert-dismissible alert-success">
+							<button type="button" class="close" data-dismiss="alert">&times;</button>
+							<h4>Thank you, your password has been successfully changed.</h4>
+							<h2><span class="glyphicon glyphicon-ok text-success text-center"></span></h2>
+						</div>
+					</div>}
+			}
+		</div>
+	</div>
+}
+else
+{
+	<h2>Hi @Model.FirstName @Model.Surname</h2>
+}
+
+
+@using (Html.BeginForm("Save", "Booking"))
+{
+	<!--BEGIN TOP FIELD GRID-->
+	<div class="container">
+
+		<div class="row">
+			<!--1ST COLUMN-->
+			<div class="col-lg-4">
+				<div class="panel panel-primary">
+					<div class="panel-heading">
+						<h3 class="panel-title">Your Details</h3>
+					</div>
+					<div class="panel-body">
+						@if (@Model.BookingNumber != null)
+						{
+							<div class="form-group">
+								<!--Only allow update if doesn't exist-->
+
+
+								@Html.Label("Booking Reference Number")
+								<div class="well well-sm">
+
+									@Html.DisplayFor(b => b.BookingNumber)
+								</div>
+
+							</div>
+						}
+						<div class="form-group">
+							<!--Only allow update if doesn't exist-->
+							@*  @Html.LabelFor(b => b.Email, new {@class = @Model.Email == null ? "label label-warning" : "label label-default"})*@
+							@Html.LabelFor(b => b.Email)
+							@if (@Model.Email != null)
+							{
+								<div class="well well-sm">
+									@Html.DisplayFor(b => b.Email)
+									@Html.HiddenFor(b => b.Email)
+								</div>
+							}
+							else
+							{
+								@Html.TextBoxFor(b => b.Email)
+							}
+						</div>
+
+						@*<div class="form-group">
+							Only allow update if doesn't exist
+							@Html.Label("External Fundraising Page")
+							<p>Please enter your fundraising page so we can keep track of your donations eg wwww.justgiving.com/test</p>
+							<div class="well well-sm">
+
+								<p class="form-inline">
+									@Html.TextBoxFor(m => m.PFPUrl, new { @id = "PFPUrl", @class = "form-control input-sm", @style = "width:270px;" })
+									<span class="glyphicon glyphicon-pencil pull-right"></span>
+
+								</p>
+
+							</div>*@
+							@*@*multi pfp display*@
+							@if (Model.PfpStrings != null)
+							{@*<div class="well well-sm">
+								<p class="form-inline">
+									@foreach (string s in Model.PfpStrings)
+									{
+										<a href="@s">s</a><br><br>
+									}
+								</p>
+							</div>*@}
+
+						@*</div>*@
+
+						<div class="form-group">
+							<!--Only allow update if doesn't exist-->
+							@Html.LabelFor(b => b.Phone)
+							@if (@Model.Phone != null)
+							{
+								<div class="well well-sm">
+									@Html.DisplayFor(b => b.Phone)
+									@Html.HiddenFor(b => b.Phone)
+								</div>
+							}
+							else
+							{
+								<div class="well well-sm">
+									<p class="form-inline">
+										@Html.TextBoxFor(b => b.Phone, new { @id = "Phone", @class = "form-control input-sm", @style = "width:270px;" })
+										<span class="glyphicon glyphicon-pencil pull-right"></span>
+									</p>
+								</div>
+							}
+						</div>
+
+					</div>
+				</div>
+			</div>
+			<!-------------->
+			<!--2ND COLUMN-->
+			<div class="col-lg-4">
+				<div class="panel panel-primary">
+					<div class="panel-heading">
+						<h3 class="panel-title">Jump Details</h3>
+					</div>
+				    <div class="panel-body">
+
+				        <div class="form-group">
+				            @Html.LabelFor(m => m.DateConfirmed)
+				            
+				                @if (@Model.DateConfirmed != null)
+                                {
+                                    <div class="btn-group btn-block">
+                                        <span class="btn btn-default active" aria-disabled="true" style="width: 80%; pointer-events: none">Confirmed Date @Html.DisplayFor(m => m.DateConfirmed)</span>
+                                        <a href="#" data-toggle="modal" data-target="#changeDateModal" class="btn btn-default" style="width: 20%">Change</a>
+                                    </div>
+                                    if (@Model.DateChange != null)
+                                    {
+                                        <div class="alert alert-dismissible alert-warning">
+                                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                                            <p>We are currently processing your date-change request. We will notify you once your new date is confirmed.</p>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="well well-sm">
+                                        @if (Model.DateChoice1 != null && Model.DateChoice1 != DateTime.MinValue)
+                                        {
+                                            <p>Date Choice 1 @Html.DisplayFor(m => m.DateChoice1)</p>
+                                            @Html.HiddenFor(m => m.DateChoice1)
+                                        }
+                                        else
+                                        {
+                                        <p class="form-inline">
+                                            Date Choice 1 @Html.TextBoxFor(m => m.DateChoice1, new { @id = "datechoice1", @class = "form-control input-sm" })
+                                            <span class="glyphicon glyphicon-pencil pull-right"></span>
+                                        </p>
+                                        }
+
+
+                                        @if (Model.DateChoice2 != null && Model.DateChoice2 != DateTime.MinValue)
+                                        {
+                                            <p>Date Choice 2 @Html.DisplayFor(m => m.DateChoice2)</p>
+                                            @Html.HiddenFor(m => m.DateChoice2)
+                                        }
+                                        else
+                                        {
+                                        <p class="form-inline">
+                                            Date Choice 2 @Html.TextBoxFor(m => m.DateChoice2, new { @id = "datechoice2", @class = "form-control input-sm" })
+                                            <span class="glyphicon glyphicon-pencil pull-right"></span>
+                                        </p>
+                                        }
+                                    </div>
+                                }
+                                    
+				        </div>
+
+				        <div class="form-group">
+				            @Html.Label("Venue")
+				            <div class="btn-group btn-block">
+				                <a href="@Url.Action("Details", "Venue", new {@Id = Model.Venue.Id})" class="btn btn-lg btn-primary" style="width: 80%;">
+				                    <!--ONLY SHOW ACTUAL AIRFIELD NAME IF DATE HAS BEEN CONFIRMED-->
+				                    @if (@Model.DateConfirmed.HasValue)
+				                    {
+				                        @Model.Venue.FriendlyName
+				                    }
+				                    else
+				                    {
+				                        @Model.Venue.Name
+				                    }
+				                    <span class="glyphicon glyphicon-circle-arrow-right pull-right"></span>
+				                </a>
+				                <a href="#" class="btn btn-default btn-lg-smtxt" data-toggle="modal" data-target="#changeVenueModal" style="width: 20%; text-align: center;">
+				                    Change
+				                    <!--<span class="glyphicon glyphicon-pencil pull-right"></span>-->
+				                </a>
+				            </div>
+
+                            @if (@Model.VenueChange != null)
+                            {
+                                <div class="alert alert-dismissible alert-warning">
+                                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                                    <p>We are currently processing your venue-change request. We will notify you once your new venue is confirmed.</p>
+                                </div>
+                            }
+
+				        </div>
+
+				        <div class="form-group">
+				            @Html.Label("Jump Type")
+				            <div class="well well-sm">
+				                @switch (Model.JumpType)
+				                {
+				                    case Booking.JumpTypeAFF:
+				                    {
+				                        <div>Accelerated Freefall Solo Skydive</div>
+				                        break;
+				                    }
+				                    case Booking.JumpTypeStaticSquare:
+				                    {
+				                        <div>Static Square Parachute Jump</div>
+				                        break;
+				                    }
+				                    case Booking.JumpTypeTandem:
+				                    {
+				                        <div>Tandem Skydive</div>
+				                        break;
+				                    }
+				                }
+				            </div>
+				        </div>
+				    </div>
+				</div>
+			</div>
+			<!-------------->
+			<!--3RD COLUMN-->
+			<div class="col-lg-4">
+				<div class="panel panel-danger">
+					<div class="panel-heading">
+						<h3 class="panel-title">To-Do List</h3>
+					</div>
+					<div class="panel-body">
+
+
+						<div class="form-group">
+							@*@Html.Label("Terms & Conditions")*@
+							@*<div class="well well-sm form-inline">*@
+						    <button class="btn btn-default btn-lg" data-toggle="modal" data-target="#termsModal">
+						        Terms & Conditions&nbsp;<span class="glyphicon glyphicon-new-window"></span>
+						    </button>
+                            
+
+							@if (@Model.TermsSigned)
+
+							{
+								<span class="glyphicon glyphicon-ok text-success pull-right"></span>
+							}
+							else
+							{
+							    <span class="glyphicon glyphicon-pencil pull-right"></span>
+							    <p><br>You still need to accept the terms and conditions</p>
+
+                            }
+
+
+
+							@*</div>*@
+						</div>
+						@Html.HiddenFor(b => b.ID)
+						@Html.HiddenFor(b => b.TermsSigned)
+
+					    <div class="form-group">
+
+					        @Html.LabelFor(b => b.DOB)
+					        @if (@Model.DOB != null)
+
+					        {
+					            <div class="well well-sm">
+					                @Html.DisplayFor(m => m.DOB)
+					                <span class="glyphicon glyphicon-ok text-success pull-right"></span>
+					            </div>
+
+					            if (Model.Under16)
+					            {
+					                <div class="alert alert-dismissible alert-danger">
+					                    @*<button type="button" class="close" data-dismiss="alert">&times;</button>*@
+					                    Please remember you must be 16 years or older to complete the jump on the day.
+					                </div>
+					            }
+					        }
+					        else
+					        {
+					            <div class="well well-sm form-inline">
+					                @Html.DropDownListFor(m => m.Day, Enumerable.Range(1, 31).Select(i => new SelectListItem {Value = i.ToString(), Text = i.ToString()}), "Day", new {@id = "day", @class = "form-control input-sm"})
+					                @Html.DropDownListFor(m => m.Month, Enumerable.Range(1, 12).Select(i => new SelectListItem {Value = i.ToString(), Text = System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(i)}), "Month", new {@id = "month", @class = "form-control input-sm"})
+					                @Html.DropDownListFor(m => m.Year, Enumerable.Range(1900, DateTime.Now.Year - 1899).Select(i => new SelectListItem {Value = i.ToString(), Text = i.ToString()}).OrderByDescending(i => i.Value), "Year", new {@id = "year", @class = "form-control input-sm"})
+
+					                @Html.ValidationMessageFor(b => b.DobHidden, "Please enter a valid Date of Birth")
+					                @Html.HiddenFor(m => m.DobHidden, new {@id = "dobHidden"})
+					                <span class="glyphicon glyphicon-pencil pull-right"></span>
+					            </div>
+					        }
+
+					        @Html.HiddenFor(m => m.DOB)
+					    </div>
+
+					    <div class="form-group">
+                            @Html.Label("Sex")
+                            @if (@Model.Sex != null)
+                            {
+                                <div class="well well-sm">
+                                    @Model.Sex
+                                    @Html.HiddenFor(m => m.Sex)
+                                    <span class="glyphicon glyphicon-ok text-success pull-right"></span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="well well-sm form-inline">
+                                    @Html.DropDownListFor(m => m.Sex, @Model.SexDdl, new { @class = "form-control input-sm" })
+                                    <span class="glyphicon glyphicon-pencil pull-right"></span>
+                                </div>
+                            }
+					    </div>
+
+						<div class="form-group">
+							<!--Only allow update if doesn't exist-->
+							@Html.Label("Height")
+							@if (@Model.HeightFeet != null)
+							{
+								<div class="well well-sm">
+									@Model.HeightFeet feet @Model.HeightInches inches
+									@Html.HiddenFor(m => m.HeightInches)
+									@Html.HiddenFor(m => m.HeightFeet)
+                                    <span class="glyphicon glyphicon-ok text-success pull-right"></span>
+								</div>
+							}
+							else
+							{
+								<div class="well well-sm form-inline">
+									@Html.DropDownListFor(m => m.HeightFeet, @Model.HeightFeetDdl, new { @class = "form-control input-sm" })
+									@Html.DropDownListFor(m => m.HeightInches, @Model.HeightInchesDdl, new { @class = "form-control input-sm" })
+									<span class="glyphicon glyphicon-pencil pull-right"></span>
+								</div>
+							}
+						</div>
+					    <div class="form-group">
+					        <!--Only allow update if doesn't exist-->
+					        @Html.Label("Weight")
+					        @if (@Model.WeightStone != null)
+					        {
+                                <div class="btn-group btn-block">
+                                    <span class="btn btn-default active pull-left" aria-disabled="true" style="width: 80%; pointer-events: none">@Model.WeightStone stone @Model.WeightPounds pounds</span>
+                                    <a href="#" data-toggle="modal" data-target="#changeWeightModal" class="btn btn-default" style="width: 20%">Change</a>
+                                    @Html.HiddenFor(b => b.WeightStone)
+                                    @Html.HiddenFor(b => b.WeightPounds)
+                                </div>
+                            }
+                            else
+                            {
+					            <div class="well well-sm form-inline">
+					                @Html.DropDownListFor(b => b.WeightStone, @Model.WeightStoneDdl, new {@class = "form-control input-sm"})
+					                @Html.DropDownListFor(b => b.WeightPounds, @Model.WeightPoundsDdl, new {@class = "form-control input-sm"})
+					                <span class="glyphicon glyphicon-pencil pull-right"></span>
+					            </div>
+					        }
+					    </div>
+					    <div class="form-group">
+							@if (@Model.OverWeight)
+							{
+
+								@Html.Label("BMI")
+								<div class="alert alert-dismissible alert-danger">
+									<button type="button" class="close" data-dismiss="alert">&times;</button>
+									@Model.strOverweight
+								</div>
+							}
+						</div>
+						@* Not actually letting this be live yet *@
+						@*@if (User.IsInRole("Admin"))
+						{
+							if (Model.Charity.Invoice != Charity.NoInvoiceNoPFP)
+							{
+								<div class="form-group">
+									@Html.Label("How to Pay for Jump")
+									<div class="well well-sm form-inline">
+										@Html.LabelFor(m => m.JCFundMethod, "Self Fund")
+										@Html.RadioButtonFor(model => model.JCFundMethod, Booking.JCFundSelf, new { id = "rbSelfFund" })
+										@Html.LabelFor(m => m.JCFundMethod, "Free Jump")
+										@Html.RadioButtonFor(model => model.JCFundMethod, Booking.JCFundDonations, new { id = "rdDonationFund" })
+
+									</div>
+								</div>if (Model.JCFundMethod == Booking.JCFundSelf)
+								{
+									<div>This option means that you are paying for your jump costs in advanced or on the day</div>
+								}
+								else if (Model.JCFundMethod == Booking.JCFundDonations)
+								{
+									<div>This option means that you are paying for your jump costs through your DoItForCharity Fundraing Page</div>
+								}
+							}
+						}*@
+						@Html.HiddenFor(b => b.ID)
+						@Html.HiddenFor(b => b.TermsSigned)
+
+					</div>
+
+				</div>
+			</div>
+		</div>
+		<!------------>
+
+		<div class="row">
+			<div class="col-lg-2 col-md-offset-5">
+				<button id="save" type="submit" onclick="this.form.submit();" class="btn btn-primary btn-block">Save</button>
+			</div>
+		</div>
+	</div>
+	<!--END TOP FIELD GRID-->
+}
+
+
+
+<!--*** Jump Details ***-->
+<div>
+	<div>
+		<!--<h4 align="left">Jump Details</h4>-->
+		@{  if (@Model.GV != true)
+
+            {
+                if (Model.Charity.Invoice != Charity.CanInvoice)
+                {
+                    @Html.Partial("_SponsorshipPayment")
+                }
+
+
+                @Html.Partial("_JumpCosts")
+
+            }
+
+            else //GV panel
+            {
+                {
+					<h5>Your Jump is fully covered by your gift voucher, please select the Venue tab to plan your day!</h5>
+				}
+			}
+		}
+	</div>
+
+</div>
+
+
+
+
+
+<!--MODAL POP UPs-->
+
+@Html.Partial("_Terms")
+@Html.Partial("_ChangeVenue")
+@Html.Partial("_ChangeDate")
+@Html.Partial("_ChangeWeight")
+
+
+<!--END MODAL POP UPs-->
+
+
+
+
+@section scripts{
+
+
+	@Scripts.Render("~/bundles/lib")
+	@Styles.Render("~/Content/cssjqryUi")
+
+
+	<script type="text/javascript">
+		$("#day, #month, #year").change(function () {
+			var day = $("#day").val().length > 1 ? $("#day").val() : "0" + $("#day").val();
+			var month = $("#month").val().length > 1 ? $("#month").val() : "0" + $("#month").val();
+
+			$("#dobHidden").val(day + "/" + month + "/" + $("#year").val());
+		});
+
+		$(document).ready(function () {
+			$("#datechoice1, #datechoice2, #datechange").datepicker({
+				minDate: 0,
+				dateFormat: 'dd MM yy'
+			});
+		});
+
+		$("#termsModal").modal("hide");
+		$("#changeVenueModal").modal("hide");
+
+	</script>
+
+}

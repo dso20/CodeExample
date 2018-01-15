@@ -1,0 +1,149 @@
+﻿
+@using Newtonsoft.Json
+@using System.Web.Configuration
+@using Microsoft.Ajax.Utilities
+@using Microsoft.SqlServer.Server
+@using ParaConfs.Models
+@model ParaConfs.ViewModels.BookingIndexViewModel
+
+
+
+<div class="panel panel-warning">
+
+
+    <div class="panel-heading">
+        <h3 class="panel-title">Sponsorship Money</h3>
+    </div>
+    <div class="panel-body">
+
+        <H5>Paying your Charity Sponsorship Money</H5>
+
+        @switch (Model.Charity.Invoice)
+        {
+            //Have to pay for jump yourself. Can reimburse from off line donations
+            case Charity.NoInvoiceNoPFP:
+
+                <p><u>Please ensure you raise enough money <strong>offline</strong> to pay for your jump on the day.</u>
+                </p>
+                <P>Your sponsorship money should be provided in one of the following methods of payment:
+                </P>
+
+
+                <STRONG><U>Offline Fundraising - Personal Cheques, Bankers Drafts, Company Cheques, Building Society Cheques and Postal Orders</U></STRONG>
+                <P>No cheque guarantee card required</P>
+                <P>
+                    Please refer to your confirmation email for the exact name to make the
+                    cheque out to, and exact sponsorship amount
+                </P>
+                <P>Cheques with your sponsorship money can be post-dated by 4 weeks.
+                </P>
+                <P>
+                    Please put the jumper's name on the back of every
+                    cheque
+                </P>
+
+                break;
+
+
+            // have to use DIFC to pay jump costs
+            case Charity.NoInvoicePFP:
+
+                <P>Your sponsorship money should be provided in one of the following methods of payment:
+                </P>
+
+                <STRONG><U>On-line Fundraising Page</U></STRONG>
+                if (@Model.PFPUrl == null || @Model.PFPUrl.IndexOf("doitfor") == 0)
+                {
+                    <P>
+                        You will need to raise enough money offline to pay for your jump costs on the day - please see below.
+                    </P>
+
+                }
+                else
+                {
+                    <P>
+                        You already have a PFP page set up with us <a href="@Model.PFPUrl">@Model.PFPUrl</a> -
+                        this is the perfect tool to collect those all important donations.
+                    </P>
+
+
+                }
+
+
+
+                <P>Money must be on the page 7 days before the jump</P>
+
+
+                <STRONG><U>Offline Fundraising - Personal Cheques, Bankers Drafts, Company Cheques, Building Society Cheques and Postal Orders</U></STRONG>
+                <P>No cheque guarantee card required</P>
+                <P>
+                    Please refer to your confirmation email for the exact name to make the
+                    cheque out to, and exact sponsorship amount
+                </P>
+                <P>Cheques with your sponsorship money can be post-dated by 4 weeks.
+                </P>
+                <P>
+                    Please put the jumper's name on the back of every
+                    cheque
+                </P>
+
+
+                break;
+
+            case Charity.CanInvoice:
+
+                <P>Your sponsorship money should be provided in one of the following two methods of payment:
+                </P>
+
+                <STRONG><U>On-line Fundraising Page</U></STRONG>
+                if (@Model.PFPUrl == null)
+                {
+                    <P>If you have created a personal fundraising page you will need to inform Skyline of the web address.</P>
+
+                    <P>Money must be on the page 7 days before the jump</P>
+                    @*<p>The URL (e.g. http://www.bmycharity.com/BMYUSERNAME) needs to be sent to Skyline or you charity at least 14 days before your jump</p>*@
+                }
+                else
+                {
+                    <P>We can see you have a fundraising page linked to your jump <a href="@Model.PFPUrl">@Model.PFPUrl</a>
+                    </P>
+
+                    <P>Money must be on the page 7 days before the jump</P>
+                }
+
+
+
+                <STRONG><U>Offline Fundraising - Personal Cheques, Bankers Drafts, Company Cheques, Building Society Cheques and Postal Orders</U></STRONG>
+                <P>No cheque guarantee card required</P>
+                <P>
+                    Please refer to your above confirmation for the exact name to make the cheque out to, and exact sponsorship amount
+                </P>
+                <P>Cheques with your sponsorship money can be post-dated by 4 weeks.
+                </P>
+                <P>
+                    Please put the jumper's name on the back of every
+                    cheque
+                </P>
+                break;
+
+        }
+
+        @if (!string.IsNullOrEmpty(Model.Charity.CharitySpecificSponsInfo))
+        {
+            <p>
+                @Html.Raw(Model.Charity.CharitySpecificSponsInfo)
+            </p>
+        }
+
+        <p class="text-danger">
+            Please note a £50 cancellation fee will be charged for any changes made by you within four weeks of your jump date, this raises to £100 within 48hrs.
+        </p>
+
+
+        <b>If you cannot pay by any of the above methods please ring Skyline on 020 7424 5522</b>
+    </div>
+</div>
+
+
+
+
